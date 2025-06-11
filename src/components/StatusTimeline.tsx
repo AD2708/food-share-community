@@ -55,32 +55,32 @@ const StatusTimeline: React.FC<StatusTimelineProps> = ({
   };
 
   return (
-    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg overflow-x-auto">
       {steps.map((step, index) => {
         const Icon = step.icon;
         return (
-          <div key={step.key} className="flex items-center">
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          <div key={step.key} className="flex items-center flex-shrink-0">
+            <div className="flex flex-col items-center min-w-0">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                 step.completed 
                   ? 'bg-green-500 text-white' 
                   : 'bg-gray-300 text-gray-600'
               }`}>
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3 w-3" />
               </div>
-              <div className="text-xs mt-1 text-center">
-                <div className={`font-medium ${step.completed ? 'text-green-600' : 'text-gray-500'}`}>
+              <div className="text-xs mt-1 text-center min-w-0">
+                <div className={`font-medium truncate ${step.completed ? 'text-green-600' : 'text-gray-500'}`}>
                   {step.label}
                 </div>
                 {step.date && (
-                  <div className="text-gray-400">
+                  <div className="text-gray-400 text-xs truncate">
                     {formatDate(step.date)}
                   </div>
                 )}
               </div>
             </div>
             {index < steps.length - 1 && (
-              <div className={`w-12 h-px ${
+              <div className={`w-8 h-px mx-2 flex-shrink-0 ${
                 steps[index + 1].completed ? 'bg-green-500' : 'bg-gray-300'
               }`} />
             )}

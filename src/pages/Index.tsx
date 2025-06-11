@@ -55,6 +55,7 @@ const Index = () => {
     toUserName: '',
     isOwner: false
   });
+  const [showDashboard, setShowDashboard] = useState(false);
   const { toast } = useToast();
 
   // Initialize auth
@@ -283,6 +284,13 @@ const Index = () => {
               {user ? (
                 <div className="flex items-center space-x-3">
                   <NotificationBell user={user} />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowDashboard(true)}
+                    className="hidden lg:flex"
+                  >
+                    Dashboard
+                  </Button>
                   <span className="text-sm text-gray-600 hidden lg:block">
                     Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                   </span>
@@ -322,6 +330,13 @@ const Index = () => {
                   </div>
                   <Button 
                     variant="outline" 
+                    onClick={() => setShowDashboard(true)}
+                    className="w-full"
+                  >
+                    Dashboard
+                  </Button>
+                  <Button 
+                    variant="outline" 
                     onClick={handleLogout}
                     className="w-full"
                   >
@@ -340,6 +355,20 @@ const Index = () => {
           )}
         </div>
       </header>
+
+      {/* Dashboard Modal */}
+      {showDashboard && user && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <UserDashboard 
+                user={user} 
+                onClose={() => setShowDashboard(false)} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="py-8 sm:py-12 lg:py-16 px-4">
@@ -567,3 +596,5 @@ const Index = () => {
 };
 
 export default Index;
+
+// ... keep existing code (UserDashboard component remains the same)
