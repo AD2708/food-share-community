@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import MapView from "@/components/MapView";
 import PostCard from "@/components/PostCard";
 import NotificationBell from "@/components/NotificationBell";
 import RatingDialog from "@/components/RatingDialog";
+import UserDashboard from "@/components/UserDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
