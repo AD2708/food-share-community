@@ -17,9 +17,11 @@ interface UserInteraction {
   message?: string;
   created_at: string;
   updated_at: string;
-  post_title?: string;
-  post_type?: string;
-  post_owner_name?: string;
+  posts?: {
+    title: string;
+    type: string;
+    owner_name: string;
+  };
 }
 
 interface UserInteractionsProps {
@@ -71,15 +73,7 @@ const UserInteractions: React.FC<UserInteractionsProps> = ({
         return;
       }
 
-      // Flatten the data structure
-      const flattenedData = data?.map(item => ({
-        ...item,
-        post_title: item.posts?.title,
-        post_type: item.posts?.type,
-        post_owner_name: item.posts?.owner_name,
-      })) || [];
-
-      setInteractions(flattenedData);
+      setInteractions(data || []);
     } catch (error) {
       console.error('Unexpected error:', error);
     } finally {
@@ -206,12 +200,12 @@ const UserInteractions: React.FC<UserInteractionsProps> = ({
               <div>
                 <CardTitle className="text-sm">
                   {interaction.interaction_type === 'claim' ? 'Claimed' : 'Offered Help'}: 
-                  {interaction.post_title && ` ${interaction.post_title}`}
+                  {interaction.posts && ` ${interaction.posts.title}`}
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  {interaction.post_type && (
+                  {interaction.posts && (
                     <Badge variant="outline" className="mr-2">
-                      {interaction.post_type}
+                      {interaction.posts.type}
                     </Badge>
                   )}
                   {new Date(interaction.created_at).toLocaleDateString()}
