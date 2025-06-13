@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +11,7 @@ interface UserInteraction {
   id: string;
   user_id: string;
   post_id: string;
-  interaction_type: 'claim' | 'offer';
+  interaction_type: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
   message?: string;
   created_at: string;
