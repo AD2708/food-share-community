@@ -1,8 +1,8 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { MapPin, Clock, User } from "lucide-react";
 
 interface Post {
@@ -12,12 +12,15 @@ interface Post {
   description: string;
   quantity: string;
   location: any;
+  latitude?: number;
+  longitude?: number;
   expiry_date: string;
   status: string;
   owner_name: string;
   created_at: string;
   owner_id: string;
   claimed_by?: string;
+  claimed_by_name?: string;
 }
 
 interface MapViewProps {
@@ -28,11 +31,18 @@ interface MapViewProps {
 
 const MapView: React.FC<MapViewProps> = ({ posts, onClaimPost, user }) => {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-
-  const getLocationText = (location: any) => {
-    if (typeof location === 'string') return location;
-    if (location && location.address) return location.address;
-    return "Location not specified";
+  
+  // Center the map around the average coordinates of all posts
+  const getMapCenter = () => {
+    const postsWithCoords = posts.filter(post => post.latitude && post.longitude);
+    if (postsWithCoords.length === 0) {
+      return { lat: 40.7128, lng: -74.0060 }; // Default to NYC
+    }
+    
+    const avgLat = postsWithCoords.reduce((sum, post) => sum + (post.latitude || 0), 0) / postsWithCoords.length;
+    const avgLng = postsWithCoords.reduce((sum, post) => sum + (post.longitude || 0), 0) / postsWithCoords.length;
+    
+    return { lat: avgLat, lng: avgLng };
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -45,112 +55,184 @@ const MapView: React.FC<MapViewProps> = ({ posts, onClaimPost, user }) => {
     return `${Math.floor(diffInHours / 24)} days ago`;
   };
 
-  const getDaysUntilExpiry = (expiryDate: string) => {
-    const expiry = new Date(expiryDate);
-    const now = new Date();
-    const diffInDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diffInDays;
+  const getLocationText = (location: any) => {
+    if (typeof location === 'string') return location;
+    if (location && location.address) return location.address;
+    return "Location not specified";
   };
 
+  const getHoursUntilExpiry = (expiryDate: string) => {
+    const expiry = new Date(expiryDate);
+    const now = new Date();
+    const diffInHours = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60));
+    return diffInHours;
+  };
+
+  const isExpiringSoon = (expiryDate: string) => {
+    return getHoursUntilExpiry(expiryDate) <= 6 && getHoursUntilExpiry(expiryDate) > 0;
+  };
+
+  const center = getMapCenter();
+
   return (
-    <div className="flex h-96 bg-white rounded-lg shadow-lg overflow-hidden">
-      {/* Mock Map Area */}
-      <div className="flex-1 bg-gradient-to-br from-green-100 to-blue-100 relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="h-16 w-16 text-green-600 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">Interactive Map View</p>
-            <p className="text-sm text-gray-500">Click on posts below to view location</p>
-          </div>
+    <div className="relative w-full h-full bg-gradient-to-br from-green-100 to-blue-100 rounded-lg overflow-hidden">
+      {/* Map Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-green-200 via-blue-200 to-green-300">
+        <div className="absolute inset-0 opacity-20">
+          <svg className="w-full h-full">
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#059669" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
         </div>
-        
-        {/* Mock pins scattered around */}
-        {posts.slice(0, 6).map((post, index) => (
-          <div
-            key={post.id}
-            className={`absolute w-4 h-4 rounded-full cursor-pointer transition-all hover:scale-125 ${
-              post.type === 'donation' ? 'bg-green-500' : 'bg-orange-500'
-            } ${selectedPost?.id === post.id ? 'ring-4 ring-white scale-125' : ''}`}
-            style={{
-              top: `${20 + (index * 12)}%`,
-              left: `${15 + (index * 13)}%`,
-            }}
-            onClick={() => setSelectedPost(post)}
-          />
-        ))}
       </div>
 
-      {/* Posts List */}
-      <div className="w-80 bg-gray-50 overflow-y-auto">
-        <div className="p-4">
-          <h3 className="font-semibold text-gray-800 mb-4">Nearby Posts</h3>
-          <div className="space-y-3">
-            {posts.slice(0, 8).map((post) => (
-              <Card 
-                key={post.id} 
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  selectedPost?.id === post.id ? 'ring-2 ring-green-500' : ''
-                }`}
-                onClick={() => setSelectedPost(post)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <Badge 
-                      variant={post.type === "donation" ? "default" : "secondary"}
-                      className={post.type === "donation" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}
-                    >
-                      {post.type === "donation" ? "🍎" : "🙏"}
-                    </Badge>
-                    <Badge 
-                      variant="outline"
-                      className={
-                        getDaysUntilExpiry(post.expiry_date) <= 1
-                          ? "border-red-500 text-red-600"
-                          : post.status === "POSTED" 
-                            ? "border-green-500 text-green-600" 
-                            : "border-yellow-500 text-yellow-600"
-                      }
-                    >
-                      {getDaysUntilExpiry(post.expiry_date) <= 1 ? "Expires Soon" : post.status}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-sm">{post.title}</CardTitle>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div className="flex items-center">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {getLocationText(post.location)}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {formatTimeAgo(post.created_at)}
-                    </div>
-                  </div>
-                  
-                  {post.status === "POSTED" && (
-                    <Button 
-                      size="sm"
-                      className="w-full mt-2 bg-orange-500 hover:bg-orange-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClaimPost(post.id);
-                      }}
-                      disabled={post.owner_id === user?.id}
-                    >
-                      {post.owner_id === user?.id 
-                        ? "Your Post" 
-                        : (post.type === "donation" ? "Claim" : "Offer Help")
-                      }
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+      {/* Map Pins */}
+      <div className="absolute inset-0 p-4">
+        {posts.map((post, index) => {
+          const x = post.latitude ? ((post.latitude - center.lat + 0.05) / 0.1) * 100 : Math.random() * 80 + 10;
+          const y = post.longitude ? ((post.longitude - center.lng + 0.05) / 0.1) * 100 : Math.random() * 80 + 10;
+          
+          return (
+            <div
+              key={post.id}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+              style={{ 
+                left: `${Math.max(5, Math.min(95, x))}%`, 
+                top: `${Math.max(5, Math.min(95, y))}%` 
+              }}
+              onClick={() => setSelectedPost(post)}
+            >
+              <div className="relative">
+                <MapPin 
+                  className={`h-8 w-8 ${
+                    post.type === 'donation' 
+                      ? 'text-green-600' 
+                      : 'text-orange-600'
+                  } drop-shadow-lg hover:scale-110 transition-transform`}
+                />
+                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
+                  post.status === 'POSTED' 
+                    ? 'bg-green-400' 
+                    : post.status === 'CLAIMED' 
+                      ? 'bg-yellow-400'
+                      : post.status === 'PICKED_UP'
+                        ? 'bg-blue-400'
+                        : 'bg-purple-400'
+                } border border-white`} />
+                {isExpiringSoon(post.expiry_date) && (
+                  <div className="absolute -top-2 -left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+        <div className="text-sm font-medium mb-2">Map Legend</div>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-green-600" />
+            <span>Donations</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-orange-600" />
+            <span>Requests</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-400 rounded-full" />
+            <span>Available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-yellow-400 rounded-full" />
+            <span>Claimed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-400 rounded-full" />
+            <span>Picked Up</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-purple-400 rounded-full" />
+            <span>Completed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span>Expires Soon</span>
           </div>
         </div>
       </div>
+
+      {/* Selected Post Details */}
+      {selectedPost && (
+        <div className="absolute bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)]">
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <Badge 
+                  variant={selectedPost.type === "donation" ? "default" : "secondary"}
+                  className={selectedPost.type === "donation" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}
+                >
+                  {selectedPost.type === "donation" ? "🍎 Donation" : "🙏 Request"}
+                </Badge>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedPost(null)}
+                  className="h-6 w-6 p-0"
+                >
+                  ×
+                </Button>
+              </div>
+              <CardTitle className="text-lg">{selectedPost.title}</CardTitle>
+              <CardDescription className="text-sm">{selectedPost.description}</CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              <div className="flex items-center text-sm text-gray-600">
+                <MapPin className="h-4 w-4 mr-2" />
+                {getLocationText(selectedPost.location)}
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <Clock className="h-4 w-4 mr-2" />
+                Expires: {new Date(selectedPost.expiry_date).toLocaleDateString()}
+                {isExpiringSoon(selectedPost.expiry_date) && (
+                  <span className="ml-2 text-red-600 font-medium">
+                    ({getHoursUntilExpiry(selectedPost.expiry_date)} hour{getHoursUntilExpiry(selectedPost.expiry_date) !== 1 ? 's' : ''} left)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <User className="h-4 w-4 mr-2" />
+                {selectedPost.owner_name} • {formatTimeAgo(selectedPost.created_at)}
+              </div>
+              <div className="font-semibold text-green-700">
+                Quantity: {selectedPost.quantity}
+              </div>
+              
+              {selectedPost.status === "POSTED" && (
+                <Button 
+                  className="w-full bg-orange-500 hover:bg-orange-600"
+                  onClick={() => {
+                    onClaimPost(selectedPost.id);
+                    setSelectedPost(null);
+                  }}
+                  disabled={selectedPost.owner_id === user?.id}
+                >
+                  {selectedPost.owner_id === user?.id
+                    ? "Your Post" 
+                    : (selectedPost.type === "donation" ? "Claim Donation" : "Offer Help")
+                  }
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

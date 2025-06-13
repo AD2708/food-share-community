@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, CheckCircle, XCircle, Clock, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MessageSquare, CheckCircle, XCircle, Clock, Users, Heart, HandHeart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -180,6 +182,96 @@ const UserInteractions: React.FC<UserInteractionsProps> = ({
     }
   };
 
+  // Separate interactions by post type
+  const donationInteractions = interactions.filter(interaction => 
+    interaction.posts?.type === 'donation'
+  );
+  
+  const requestInteractions = interactions.filter(interaction => 
+    interaction.posts?.type === 'request'
+  );
+
+  const renderInteractionCard = (interaction: UserInteraction) => (
+    <Card key={interaction.id} className="bg-white/90 backdrop-blur-sm">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-sm">
+              {interaction.interaction_type === 'claim' ? 'Claimed' : 'Offered Help'}: 
+              {interaction.posts && ` ${interaction.posts.title}`}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {interaction.posts && (
+                <Badge variant="outline" className="mr-2">
+                  {interaction.posts.type}
+                </Badge>
+              )}
+              {new Date(interaction.created_at).toLocaleDateString()}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            {getStatusIcon(interaction.status)}
+            <Badge className={getStatusColor(interaction.status)}>
+              {interaction.status}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {interaction.message && (
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <MessageSquare className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Message</span>
+            </div>
+            <p className="text-sm text-gray-600">{interaction.message}</p>
+          </div>
+        )}
+
+        {interaction.status === 'pending' && (
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Add a message (optional)..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              className="text-sm"
+              rows={2}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => sendMessage(interaction.id)}
+                disabled={sendingMessage}
+              >
+                Update Message
+              </Button>
+              {showAll && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateInteractionStatus(interaction.id, 'approved')}
+                    className="text-green-600 border-green-200 hover:bg-green-50"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateInteractionStatus(interaction.id, 'rejected')}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    Reject
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   if (loading) {
     return (
       <div className="text-center py-4">
@@ -199,86 +291,48 @@ const UserInteractions: React.FC<UserInteractionsProps> = ({
 
   return (
     <div className="space-y-4">
-      {interactions.map((interaction) => (
-        <Card key={interaction.id} className="bg-white/90 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-sm">
-                  {interaction.interaction_type === 'claim' ? 'Claimed' : 'Offered Help'}: 
-                  {interaction.posts && ` ${interaction.posts.title}`}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {interaction.posts && (
-                    <Badge variant="outline" className="mr-2">
-                      {interaction.posts.type}
-                    </Badge>
-                  )}
-                  {new Date(interaction.created_at).toLocaleDateString()}
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(interaction.status)}
-                <Badge className={getStatusColor(interaction.status)}>
-                  {interaction.status}
-                </Badge>
-              </div>
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            All ({interactions.length})
+          </TabsTrigger>
+          <TabsTrigger value="donations" className="flex items-center gap-2">
+            <Heart className="h-4 w-4" />
+            Donations ({donationInteractions.length})
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="flex items-center gap-2">
+            <HandHeart className="h-4 w-4" />
+            Requests ({requestInteractions.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="space-y-4 mt-4">
+          {interactions.map(renderInteractionCard)}
+        </TabsContent>
+        
+        <TabsContent value="donations" className="space-y-4 mt-4">
+          {donationInteractions.length === 0 ? (
+            <div className="text-center py-8">
+              <Heart className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No donation interactions yet.</p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {interaction.message && (
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <MessageSquare className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Message</span>
-                </div>
-                <p className="text-sm text-gray-600">{interaction.message}</p>
-              </div>
-            )}
-
-            {interaction.status === 'pending' && (
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Add a message (optional)..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  className="text-sm"
-                  rows={2}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => sendMessage(interaction.id)}
-                    disabled={sendingMessage}
-                  >
-                    Update Message
-                  </Button>
-                  {showAll && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateInteractionStatus(interaction.id, 'approved')}
-                        className="text-green-600 border-green-200 hover:bg-green-50"
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateInteractionStatus(interaction.id, 'rejected')}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+          ) : (
+            donationInteractions.map(renderInteractionCard)
+          )}
+        </TabsContent>
+        
+        <TabsContent value="requests" className="space-y-4 mt-4">
+          {requestInteractions.length === 0 ? (
+            <div className="text-center py-8">
+              <HandHeart className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No request interactions yet.</p>
+            </div>
+          ) : (
+            requestInteractions.map(renderInteractionCard)
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

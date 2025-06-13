@@ -19,7 +19,9 @@ export type Database = {
           description: string
           expiry_date: string
           id: string
+          latitude: number | null
           location: Json
+          longitude: number | null
           owner_id: string
           owner_name: string
           picked_up_at: string | null
@@ -38,7 +40,9 @@ export type Database = {
           description: string
           expiry_date: string
           id?: string
+          latitude?: number | null
           location: Json
+          longitude?: number | null
           owner_id: string
           owner_name: string
           picked_up_at?: string | null
@@ -57,7 +61,9 @@ export type Database = {
           description?: string
           expiry_date?: string
           id?: string
+          latitude?: number | null
           location?: Json
+          longitude?: number | null
           owner_id?: string
           owner_name?: string
           picked_up_at?: string | null
@@ -123,6 +129,10 @@ export type Database = {
           p_type: string
           p_post_id?: string
         }
+        Returns: undefined
+      }
+      delete_expired_posts: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }

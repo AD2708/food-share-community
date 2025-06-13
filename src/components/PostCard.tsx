@@ -14,6 +14,8 @@ interface Post {
   description: string;
   quantity: string;
   location: any;
+  latitude?: number;
+  longitude?: number;
   expiry_date: string;
   status: string;
   owner_name: string;
@@ -85,6 +87,14 @@ const PostCard: React.FC<PostCardProps> = ({
     return "Location not specified";
   };
 
+  // Updated to use hours for more precise tracking
+  const getHoursUntilExpiry = (expiryDate: string) => {
+    const expiry = new Date(expiryDate);
+    const now = new Date();
+    const diffInHours = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60));
+    return diffInHours;
+  };
+
   const getDaysUntilExpiry = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -92,7 +102,8 @@ const PostCard: React.FC<PostCardProps> = ({
     return diffInDays;
   };
 
-  const isExpiringSoon = getDaysUntilExpiry(post.expiry_date) <= 1;
+  // Show "expires soon" only when 6 hours or less remain
+  const isExpiringSoon = getHoursUntilExpiry(post.expiry_date) <= 6 && getHoursUntilExpiry(post.expiry_date) > 0;
   const isOwner = post.owner_id === user?.id;
   const isClaimer = post.claimed_by === user?.id;
 
@@ -188,7 +199,7 @@ const PostCard: React.FC<PostCardProps> = ({
           Expires: {new Date(post.expiry_date).toLocaleDateString()}
           {isExpiringSoon && (
             <span className="ml-2 text-red-600 font-medium">
-              ({getDaysUntilExpiry(post.expiry_date)} day{getDaysUntilExpiry(post.expiry_date) !== 1 ? 's' : ''} left)
+              ({getHoursUntilExpiry(post.expiry_date)} hour{getHoursUntilExpiry(post.expiry_date) !== 1 ? 's' : ''} left)
             </span>
           )}
         </div>

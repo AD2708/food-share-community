@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +20,8 @@ interface Post {
   description: string;
   quantity: string;
   location: any;
+  latitude?: number;
+  longitude?: number;
   expiry_date: string;
   status: string;
   owner_name: string;
@@ -79,9 +80,25 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Clean up expired posts and fetch posts
+  const cleanupExpiredPosts = async () => {
+    try {
+      // Call the function to delete expired posts
+      const { error } = await supabase.rpc('delete_expired_posts');
+      if (error) {
+        console.error('Error cleaning up expired posts:', error);
+      }
+    } catch (error) {
+      console.error('Unexpected error cleaning up posts:', error);
+    }
+  };
+
   // Fetch posts
   const fetchPosts = async () => {
     try {
+      // First cleanup expired posts
+      await cleanupExpiredPosts();
+
       const { data, error } = await supabase
         .from('posts')
         .select('*')
@@ -159,7 +176,8 @@ const Index = () => {
         .update({ 
           status: 'CLAIMED',
           claimed_by: currentUser.id,
-          claimed_by_name: userName
+          claimed_by_name: userName,
+          claimed_at: new Date().toISOString()
         })
         .eq('id', postId);
 
@@ -192,7 +210,10 @@ const Index = () => {
     try {
       const { error } = await supabase
         .from('posts')
-        .update({ status: 'PICKED_UP' })
+        .update({ 
+          status: 'PICKED_UP',
+          picked_up_at: new Date().toISOString()
+        })
         .eq('id', postId);
 
       if (error) {
@@ -219,7 +240,10 @@ const Index = () => {
     try {
       const { error } = await supabase
         .from('posts')
-        .update({ status: 'COMPLETED' })
+        .update({ 
+          status: 'COMPLETED',
+          completed_at: new Date().toISOString()
+        })
         .eq('id', postId);
 
       if (error) {
@@ -268,6 +292,14 @@ const Index = () => {
     });
   };
 
+  // Updated helper function for expiry logic - 6 hours instead of 1 day
+  const getHoursUntilExpiry = (expiryDate: string) => {
+    const expiry = new Date(expiryDate);
+    const now = new Date();
+    const diffInHours = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60));
+    return diffInHours;
+  };
+
   const getDaysUntilExpiry = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -275,16 +307,24 @@ const Index = () => {
     return diffInDays;
   };
 
-  // Enhanced filtering
+  // Enhanced filtering with updated expiry logic
   const filteredPosts = posts.filter(post => {
     // Type filter
     if (filterType !== 'all' && post.type !== filterType) return false;
     
-    // Expiry filter
-    if (filterExpiry === 'soon' && getDaysUntilExpiry(post.expiry_date) > 1) return false;
+    // Expiry filter - only show posts expiring within 6 hours for "soon"
+    if (filterExpiry === 'soon' && getHoursUntilExpiry(post.expiry_date) > 6) return false;
     
     return true;
   });
+
+  // Calculate community impact stats
+  const totalPosts = posts.length;
+  const claimedPosts = posts.filter(p => ['CLAIMED', 'PICKED_UP', 'COMPLETED'].includes(p.status)).length;
+  const completedPosts = posts.filter(p => p.status === 'COMPLETED').length;
+  const donationPosts = posts.filter(p => p.type === 'donation').length;
+  const requestPosts = posts.filter(p => p.type === 'request').length;
+  const pickedUpPosts = posts.filter(p => ['PICKED_UP', 'COMPLETED'].includes(p.status)).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-green-100">
@@ -508,7 +548,7 @@ const Index = () => {
                 }`}
                 onClick={() => setFilterExpiry('soon')}
               >
-                Expiring Soon
+                Expiring Soon (6 hours)
               </Badge>
             </div>
           </div>
@@ -556,28 +596,30 @@ const Index = () => {
       <section className="py-12 sm:py-16 px-4 bg-white/60 backdrop-blur-sm">
         <div className="container mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-center text-green-800 mb-8 sm:mb-12">Our Community Impact</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-8 text-center">
             <div className="p-4 sm:p-6">
-              <div className="text-2xl sm:text-4xl font-bold text-green-600 mb-2">{posts.length}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">{totalPosts}</div>
               <div className="text-gray-700 text-sm sm:text-base">Total Posts</div>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="text-2xl sm:text-4xl font-bold text-orange-600 mb-2">
-                {posts.filter(p => p.status === 'CLAIMED').length}
-              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">{donationPosts}</div>
+              <div className="text-gray-700 text-sm sm:text-base">Donations</div>
+            </div>
+            <div className="p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">{requestPosts}</div>
+              <div className="text-gray-700 text-sm sm:text-base">Requests</div>
+            </div>
+            <div className="p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-600 mb-2">{claimedPosts}</div>
               <div className="text-gray-700 text-sm sm:text-base">Items Claimed</div>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="text-2xl sm:text-4xl font-bold text-blue-600 mb-2">
-                {posts.filter(p => p.status === 'COMPLETED').length}
-              </div>
-              <div className="text-gray-700 text-sm sm:text-base">Completed</div>
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{pickedUpPosts}</div>
+              <div className="text-gray-700 text-sm sm:text-base">Picked Up</div>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="text-2xl sm:text-4xl font-bold text-green-600 mb-2">
-                {posts.filter(p => p.type === 'donation').length}
-              </div>
-              <div className="text-gray-700 text-sm sm:text-base">Food Donations</div>
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">{completedPosts}</div>
+              <div className="text-gray-700 text-sm sm:text-base">Completed</div>
             </div>
           </div>
         </div>
