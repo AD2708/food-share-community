@@ -11,7 +11,7 @@ interface UserInteraction {
   id: string;
   user_id: string;
   post_id: string;
-  interaction_type: string;
+  interaction_type: 'claim' | 'offer';
   status: 'pending' | 'approved' | 'rejected' | 'completed';
   message?: string;
   created_at: string;
@@ -72,7 +72,14 @@ const UserInteractions: React.FC<UserInteractionsProps> = ({
         return;
       }
 
-      setInteractions(data || []);
+      // Type assertion to ensure the data matches our interface
+      const typedData = (data || []).map(item => ({
+        ...item,
+        interaction_type: item.interaction_type as 'claim' | 'offer',
+        status: item.status as 'pending' | 'approved' | 'rejected' | 'completed'
+      })) as UserInteraction[];
+
+      setInteractions(typedData);
     } catch (error) {
       console.error('Unexpected error:', error);
     } finally {
