@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import StatusTimeline from './StatusTimeline';
 import UserProfile from './UserProfile';
+import UserInteractions from './UserInteractions';
 
 interface Post {
   id: string;
@@ -34,7 +35,7 @@ interface UserDashboardProps {
 const UserDashboard: React.FC<UserDashboardProps> = ({ user, onClose }) => {
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'posts' | 'profile'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'interactions' | 'profile'>('posts');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -136,6 +137,16 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onClose }) => {
           onClick={() => setActiveTab('posts')}
         >
           My Posts ({userPosts.length})
+        </button>
+        <button
+          className={`pb-2 px-1 ${
+            activeTab === 'interactions'
+              ? 'border-b-2 border-green-500 text-green-600 font-medium'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+          onClick={() => setActiveTab('interactions')}
+        >
+          My Activity
         </button>
         <button
           className={`pb-2 px-1 ${
@@ -247,6 +258,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onClose }) => {
             })}
           </div>
         )
+      ) : activeTab === 'interactions' ? (
+        <UserInteractions userId={user.id} showAll={true} />
       ) : (
         <UserProfile userId={user.id} userName={userName} />
       )}

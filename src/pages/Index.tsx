@@ -138,6 +138,22 @@ const Index = () => {
       // Get user's name from metadata or email
       const userName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Unknown User';
 
+      // First, create the interaction record
+      const { error: interactionError } = await supabase
+        .from('user_interactions')
+        .insert({
+          user_id: currentUser.id,
+          post_id: postId,
+          interaction_type: 'claim',
+          status: 'pending'
+        });
+
+      if (interactionError) {
+        console.error('Error creating interaction:', interactionError);
+        // Continue with claim even if interaction creation fails
+      }
+
+      // Then update the post status
       const { error } = await supabase
         .from('posts')
         .update({ 
@@ -598,5 +614,3 @@ const Index = () => {
 };
 
 export default Index;
-
-// ... keep existing code (UserDashboard component remains the same)

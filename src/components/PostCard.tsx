@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, User, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import StatusTimeline from './StatusTimeline';
 
 interface Post {
@@ -42,6 +43,32 @@ const PostCard: React.FC<PostCardProps> = ({
   user, 
   expanded = false 
 }) => {
+  const [interactionCount, setInteractionCount] = useState(0);
+
+  useEffect(() => {
+    if (expanded) {
+      fetchInteractionCount();
+    }
+  }, [post.id, expanded]);
+
+  const fetchInteractionCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('user_interactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', post.id);
+
+      if (error) {
+        console.error('Error fetching interaction count:', error);
+        return;
+      }
+
+      setInteractionCount(count || 0);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+    }
+  };
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -186,6 +213,7 @@ const PostCard: React.FC<PostCardProps> = ({
             claimedAt={post.claimed_at}
             pickedUpAt={post.picked_up_at}
             completedAt={post.completed_at}
+            interactionCount={interactionCount}
           />
         )}
       </CardContent>

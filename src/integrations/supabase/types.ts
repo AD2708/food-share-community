@@ -9,47 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          post_id: string | null
-          read: boolean
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          post_id?: string | null
-          read?: boolean
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          post_id?: string | null
-          read?: boolean
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       posts: {
         Row: {
           claimed_at: string | null
@@ -110,70 +69,40 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      user_interactions: {
         Row: {
-          average_rating: number | null
           created_at: string | null
-          full_name: string | null
           id: string
-          rating: number | null
-          total_donations: number | null
-          total_ratings: number | null
-          total_requests: number | null
+          interaction_type: string
+          message: string | null
+          post_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
-          average_rating?: number | null
           created_at?: string | null
-          full_name?: string | null
-          id: string
-          rating?: number | null
-          total_donations?: number | null
-          total_ratings?: number | null
-          total_requests?: number | null
+          id?: string
+          interaction_type: string
+          message?: string | null
+          post_id: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
-          average_rating?: number | null
           created_at?: string | null
-          full_name?: string | null
           id?: string
-          rating?: number | null
-          total_donations?: number | null
-          total_ratings?: number | null
-          total_requests?: number | null
-        }
-        Relationships: []
-      }
-      ratings: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          from_user_id: string
-          id: string
-          post_id: string
-          rating: number
-          to_user_id: string
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string | null
-          from_user_id: string
-          id?: string
-          post_id: string
-          rating: number
-          to_user_id: string
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string | null
-          from_user_id?: string
-          id?: string
+          interaction_type?: string
+          message?: string | null
           post_id?: string
-          rating?: number
-          to_user_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "ratings_post_id_fkey"
+            foreignKeyName: "user_interactions_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
