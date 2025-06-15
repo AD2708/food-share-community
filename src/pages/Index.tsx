@@ -83,7 +83,7 @@ const Index = () => {
   // Clean up expired posts and fetch posts
   const cleanupExpiredPosts = async () => {
     try {
-      // Call the function to delete expired posts
+      // Call the updated function to delete expired posts with different intervals
       const { error } = await supabase.rpc('delete_expired_posts');
       if (error) {
         console.error('Error cleaning up expired posts:', error);
