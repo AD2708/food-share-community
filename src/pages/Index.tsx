@@ -292,7 +292,7 @@ const Index = () => {
     });
   };
 
-  // Updated helper function for expiry logic - 6 hours instead of 1 day
+  // Updated helper function for expiry logic - 6 hours for donations, 2 days for requests
   const getHoursUntilExpiry = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -312,8 +312,11 @@ const Index = () => {
     // Type filter
     if (filterType !== 'all' && post.type !== filterType) return false;
     
-    // Expiry filter - only show posts expiring within 6 hours for "soon"
-    if (filterExpiry === 'soon' && getHoursUntilExpiry(post.expiry_date) > 6) return false;
+    // Expiry filter - show posts expiring within 6 hours for donations, 2 days for requests
+    if (filterExpiry === 'soon') {
+      if (post.type === 'donation' && getHoursUntilExpiry(post.expiry_date) > 6) return false;
+      if (post.type === 'request' && getDaysUntilExpiry(post.expiry_date) > 2) return false;
+    }
     
     return true;
   });
@@ -414,10 +417,16 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Dashboard Modal */}
+      {/* Dashboard Modal - Updated to close on backdrop click */}
       {showDashboard && user && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowDashboard(false)}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <UserDashboard 
                 user={user} 
@@ -548,7 +557,7 @@ const Index = () => {
                 }`}
                 onClick={() => setFilterExpiry('soon')}
               >
-                Expiring Soon (6 hours)
+                Expiring Soon
               </Badge>
             </div>
           </div>

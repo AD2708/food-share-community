@@ -45,32 +45,6 @@ const PostCard: React.FC<PostCardProps> = ({
   user, 
   expanded = false 
 }) => {
-  const [interactionCount, setInteractionCount] = useState(0);
-
-  useEffect(() => {
-    if (expanded) {
-      fetchInteractionCount();
-    }
-  }, [post.id, expanded]);
-
-  const fetchInteractionCount = async () => {
-    try {
-      const { count, error } = await supabase
-        .from('user_interactions')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-
-      if (error) {
-        console.error('Error fetching interaction count:', error);
-        return;
-      }
-
-      setInteractionCount(count || 0);
-    } catch (error) {
-      console.error('Unexpected error:', error);
-    }
-  };
-
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -199,7 +173,7 @@ const PostCard: React.FC<PostCardProps> = ({
           Expires: {new Date(post.expiry_date).toLocaleDateString()}
           {isExpiringSoon && (
             <span className="ml-2 text-red-600 font-medium">
-              ({getHoursUntilExpiry(post.expiry_date)} hour{getHoursUntilExpiry(post.expiry_date) !== 1 ? 's' : ''} left)
+              (Expires Soon)
             </span>
           )}
         </div>
@@ -224,7 +198,6 @@ const PostCard: React.FC<PostCardProps> = ({
             claimedAt={post.claimed_at}
             pickedUpAt={post.picked_up_at}
             completedAt={post.completed_at}
-            interactionCount={interactionCount}
           />
         )}
       </CardContent>
