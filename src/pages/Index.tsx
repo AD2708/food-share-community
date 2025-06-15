@@ -292,7 +292,7 @@ const Index = () => {
     });
   };
 
-  // Updated helper function for expiry logic - 6 hours for donations, 2 days for requests
+  // Updated helper function - consistent 6 hours logic for both types
   const getHoursUntilExpiry = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -300,22 +300,14 @@ const Index = () => {
     return diffInHours;
   };
 
-  const getDaysUntilExpiry = (expiryDate: string) => {
-    const expiry = new Date(expiryDate);
-    const now = new Date();
-    const diffInDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diffInDays;
-  };
-
-  // Enhanced filtering with updated expiry logic
+  // Enhanced filtering with updated expiry logic - 6 hours for both types
   const filteredPosts = posts.filter(post => {
     // Type filter
     if (filterType !== 'all' && post.type !== filterType) return false;
     
-    // Expiry filter - show posts expiring within 6 hours for donations, 2 days for requests
+    // Expiry filter - show posts expiring within 6 hours for both donations and requests
     if (filterExpiry === 'soon') {
-      if (post.type === 'donation' && getHoursUntilExpiry(post.expiry_date) > 6) return false;
-      if (post.type === 'request' && getDaysUntilExpiry(post.expiry_date) > 2) return false;
+      if (getHoursUntilExpiry(post.expiry_date) > 6) return false;
     }
     
     return true;

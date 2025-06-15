@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +60,7 @@ const PostCard: React.FC<PostCardProps> = ({
     return "Location not specified";
   };
 
-  // Updated to use hours for more precise tracking
+  // Updated to use consistent 6-hour logic for both donation and request posts
   const getHoursUntilExpiry = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -69,14 +68,7 @@ const PostCard: React.FC<PostCardProps> = ({
     return diffInHours;
   };
 
-  const getDaysUntilExpiry = (expiryDate: string) => {
-    const expiry = new Date(expiryDate);
-    const now = new Date();
-    const diffInDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diffInDays;
-  };
-
-  // Show "expires soon" only when 6 hours or less remain
+  // Show "expires soon" when 6 hours or less remain for both types
   const isExpiringSoon = getHoursUntilExpiry(post.expiry_date) <= 6 && getHoursUntilExpiry(post.expiry_date) > 0;
   const isOwner = post.owner_id === user?.id;
   const isClaimer = post.claimed_by === user?.id;
